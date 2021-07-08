@@ -1,0 +1,7 @@
+name: String_Line
+version: ${project.version}
+main: none.stringline.StringLine
+api-version: 1.17
+load: STARTUP
+authors: [ kanahebi ]
+description: OP
