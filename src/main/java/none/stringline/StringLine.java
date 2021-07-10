@@ -101,18 +101,21 @@ public final class StringLine extends JavaPlugin implements Listener
         //botへ通知(邪魔だったらここを消す)
         //sender("[plugin]:プレイヤーがログアウトしました。");
 
-        //オンラインのプレイヤーが0 かつ timerが死んでるときに新しくtimerを起動する。
+        //オンラインのプレイヤーが0になったらセーブ かつ timerが死んでるときに新しくtimerを起動する。
         //生死判定用真偽値の更新を忘れずに
-        if (Bukkit.getOnlinePlayers().isEmpty() && !Boolean)
+        if (Bukkit.getOnlinePlayers().isEmpty())
         {
-            Boolean = true;
-            //sender("[plugin]:オンラインプレイヤーが0です。シャットダウンを開始します。");
-            //sender("[plugin]:サーバーのシャットダウンを開始しています。10分後にサーバーをシャットダウンします。");
-            sinssender("alert container_name "+ name +" のプレイヤー数が0です。新しくログインがない場合10分後に "+name+" はシャットダウンされます。");
-            getLogger().info("[plugin]:タイマーを開始します。");
-            getServer().savePlayers();
+            sinssender("alert container_name " + name + " : プレイヤー数が0になりました。ワールドのセーブを開始します。");
             Save();
-            timers();
+            if(!Boolean)
+            {
+                Boolean = true;
+                //sender("[plugin]:オンラインプレイヤーが0です。シャットダウンを開始します。");
+                //sender("[plugin]:サーバーのシャットダウンを開始しています。10分後にサーバーをシャットダウンします。");
+                sinssender("alert container_name " + name + " : 新しくログインがない場合10分後にシャットダウンされます。");
+                getLogger().info("[plugin]:タイマーを開始します。");
+                timers();
+            }
         }
     }
     //
