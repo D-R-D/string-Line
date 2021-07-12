@@ -14,15 +14,12 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public final class StringLine extends JavaPlugin implements Listener
 {
     //タイマーの生死確認用の真偽値
-    boolean Boolean = false;
+    boolean Boolean = false , savlean = false , firlean = false;
     String name;
     //true = living , false = dead
 
@@ -34,7 +31,7 @@ public final class StringLine extends JavaPlugin implements Listener
     {
         //イベントハンドラを有効化する
         getServer().getPluginManager().registerEvents(this,this);
-        
+
         String names = null;
         try{
         String pass = System.getProperty("user.dir");
@@ -45,7 +42,7 @@ public final class StringLine extends JavaPlugin implements Listener
         names = ("alert server started [ "+name+" ]");
         br.close();
         }
-        catch(FileNotFoundException e){ System.out.println(e); }
+        catch(FileNotFoundException e){ System.out.println(e.getMessage()); }
         catch (IOException e) { e.printStackTrace(); }
         sinssender(names);
 
@@ -65,11 +62,11 @@ public final class StringLine extends JavaPlugin implements Listener
         //sender("status:true");
         //sender("[plugin]:サーバーが開きました。");
         //sender("[plugin]:プレイヤーのログインを待っています。ログインがない場合、10分後にサーバーをシャットダウンします。");
-        getLogger().info("[plugin]:タイマーを開始します。");
+        getLogger().info("タイマーを開始します。");
 
         //自動シャットダウン用のタイマーを起動、生死確認用の真偽値を真にしておく
         timers();
-        sub_timers();
+        //sub_timers();
         Boolean = true;
     }
     //
@@ -96,27 +93,29 @@ public final class StringLine extends JavaPlugin implements Listener
     /*プレイヤーがログアウトした時に呼び出されるイベント*/
     //
     @EventHandler
-    public void onLogoutEvent(PlayerQuitEvent event)
-    {
+    public void onLogoutEvent(PlayerQuitEvent event) {
         //botへ通知(邪魔だったらここを消す)
         //sender("[plugin]:プレイヤーがログアウトしました。");
 
         //オンラインのプレイヤーが0になったらセーブ かつ timerが死んでるときに新しくtimerを起動する。
         //生死判定用真偽値の更新を忘れずに
-        if (Bukkit.getOnlinePlayers().isEmpty())
-        {
-            sinssender("alert container_name " + name + " : プレイヤー数が0になりました。ワールドのセーブを開始します。");
-            Save();
-            if(!Boolean)
-            {
-                Boolean = true;
-                //sender("[plugin]:オンラインプレイヤーが0です。シャットダウンを開始します。");
-                //sender("[plugin]:サーバーのシャットダウンを開始しています。10分後にサーバーをシャットダウンします。");
-                sinssender("alert container_name " + name + " : 新しくログインがない場合10分後にシャットダウンされます。");
-                getLogger().info("[plugin]:タイマーを開始します。");
-                timers();
+        Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+            public void run() {
+                if (Bukkit.getOnlinePlayers().isEmpty()) {
+                    getLogger().info("ワールドのセーブを開始します。");
+                    sinssender("alert container_name " + name + " : プレイヤー数が0になりました。ワールドのセーブを開始します。");
+                    Save();
+                    if (!Boolean) {
+                        Boolean = true;
+                        //sender("[plugin]:オンラインプレイヤーが0です。シャットダウンを開始します。");
+                        //sender("[plugin]:サーバーのシャットダウンを開始しています。10分後にサーバーをシャットダウンします。");
+                        sinssender("alert container_name " + name + " : 新しくログインがない場合10分後にシャットダウンされます。");
+                        getLogger().info("タイマーを開始します。");
+                        timers();
+                    }
+                }
             }
-        }
+    }, 20);
     }
     //
     /*プレイヤーがログアウトした時に呼び出されるイベント*/
@@ -130,9 +129,13 @@ public final class StringLine extends JavaPlugin implements Listener
     {
         //既に1人以上ログインしているため生死確認用真偽値の確認だけでok
         //実際にtimerを停止する部分はtimerに組み込み済みだから気にしないで
+
+        firlean = true;
+        savlean = true;
+
         if (Boolean)
         {
-            getLogger().info("[plugin]:サーバーのシャットダウンを停止します。");
+            getLogger().info("サーバーのシャットダウンを停止します。");
         }
     }
     //
@@ -144,8 +147,11 @@ public final class StringLine extends JavaPlugin implements Listener
     //
     private void Save()
     {
+        getLogger().info("サーバーをセーブ中です…");
         savePlayers();
         saveWorld();
+        getLogger().info("サーバーのセーブが終了しました。");
+        sinssender("alert container_name " + name +" : セーブが完了しました。");
     }
 
     private void savePlayers()
@@ -214,6 +220,7 @@ public final class StringLine extends JavaPlugin implements Listener
         //タイマーの設定
     }
 
+    /*
     public void sub_timers() {
         //バグ回避のためタイマーは毎回新しく作る
         Timer timer = new Timer();
@@ -221,15 +228,26 @@ public final class StringLine extends JavaPlugin implements Listener
         TimerTask task = new TimerTask() {
             @Override
             public void run() {
-                if (Bukkit.getOnlinePlayers().isEmpty() && !Boolean) {
-                    Boolean = true;
-                    timers();
+                if (Bukkit.getOnlinePlayers().isEmpty() && firlean)
+                {
+                    if(savlean) {
+                        savlean = false;
+                        getLogger().info("[plugin]:ワールドのセーブを開始します。");
+                        sinssender("alert container_name " + name + " : プレイヤー数が0になりました。ワールドのセーブを開始します。");
+                        Save();
+                    }
+                    if(!Boolean) {
+                        Boolean = true;
+                        sinssender("alert container_name " + name + " : 新しくログインがない場合10分後にシャットダウンされます。");
+                        getLogger().info("[plugin]:タイマーを開始します。");
+                        timers();
+                    }
                 }
             }
         };
         timer.scheduleAtFixedRate(task, 1000, 1000);
     }
-
+    */
 
     //
     /*botにudp通信でデータを渡す*/
