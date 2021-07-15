@@ -44,6 +44,7 @@ public final class StringLine extends JavaPlugin implements Listener
         }
         catch(FileNotFoundException e){ System.out.println(e.getMessage()); }
         catch (IOException e) { e.printStackTrace(); }
+        eventsender(name+":started");
         sinssender(names);
 
 
@@ -80,6 +81,7 @@ public final class StringLine extends JavaPlugin implements Listener
     public void onDisable()
     {
         String named = "container:dead:"+name;
+        eventsender(name+":stopped");
         sinssender(named);
         //sender("status:false");
         //sender("[plugin]:サーバーが終了しました。");
@@ -295,6 +297,25 @@ public final class StringLine extends JavaPlugin implements Listener
         sock.close();
 
         getLogger().info("udp sended");
+    }
+
+    public void eventsender(String str)
+    {
+        //strをbyte配列に変換
+        byte[] data;
+        data = str.getBytes(StandardCharsets.UTF_8);
+        //接続用のソケットを作成
+        DatagramSocket sock = null;
+        try { sock = new DatagramSocket(); }
+        catch (SocketException e) { e.printStackTrace();}
+        //パケットを作成し、udpで送信する。
+        DatagramPacket packet = new DatagramPacket(data,data.length,new InetSocketAddress("127.0.0.1",7011));
+        try { sock.send(packet); }
+        catch (IOException e) { e.printStackTrace(); }
+        //最後にお片付けして終了
+        sock.close();
+
+        getLogger().info("event sended");
     }
     //
     /*sinsにudp送信*/
